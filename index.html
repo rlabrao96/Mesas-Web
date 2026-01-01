@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cami & Rafa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=GFS+Didot&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         * {
@@ -21,7 +24,7 @@
             background-image: url('fondo.png'); 
             background-size: cover;
             background-position: center center;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica", Arial, sans-serif;
+            font-family: 'GFS Didot', 'Didot', 'Bodoni MT', 'Bodoni 72', 'Bodoni', serif;
             margin: 0;
             display: flex;
             justify-content: center;
@@ -169,6 +172,7 @@
             z-index: 1000;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
         }
         
         .modal-content { 
@@ -184,6 +188,8 @@
             max-height: 80vh;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
         }
         
         /* Mobile modal adjustments */
@@ -231,11 +237,31 @@
             color: #444; 
         }
 
+        /* Estilo del título sobre la imagen */
+        .imagen-titulo {
+            font-family: 'GFS Didot', 'Didot', 'Bodoni MT', 'Bodoni 72', 'Bodoni', serif;
+            font-size: 1.1em;
+            color: #2c3e50;
+            text-align: center;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-style: italic;
+            padding: 0 10px;
+        }
+        
+        @media (max-width: 767px) {
+            .imagen-titulo {
+                font-size: 1em;
+                margin-top: 20px;
+                margin-bottom: 12px;
+            }
+        }
+        
         /* Estilo de la imagen de la mesa */
         .mesa-img {
             width: 100%;
             border-radius: 15px;
-            margin-top: 20px;
+            margin-top: 0;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             display: block;
         }
@@ -267,6 +293,11 @@
 
         const normalizar = (texto) => {
             return texto.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        };
+        
+        const obtenerTextoEdad = (edad) => {
+            const edadNum = parseInt(edad);
+            return edadNum === 1 ? `${edadNum} año` : `${edadNum} años`;
         };
 
         Papa.parse("invitados.csv", {
@@ -309,6 +340,8 @@
             });
         });
 
+        let scrollPosition = 0;
+        
         function verMesa(numMesa) {
             const modal = document.getElementById('miModal');
             const lista = document.getElementById('listaMesa');
@@ -326,33 +359,70 @@
                 lista.appendChild(li);
             });
 
+            // Insertar título sobre la imagen (la edad es igual al número de mesa)
+            const titulo = document.createElement('p');
+            titulo.className = 'imagen-titulo';
+            titulo.innerText = `Un recuerdo de cuando teníamos ${obtenerTextoEdad(numMesa)}`;
+            contenedorImg.appendChild(titulo);
+            
             // Insertar imagen dinámica: mesa1.png, mesa2.png, etc.
             const img = document.createElement('img');
             img.src = `mesa${numMesa}.png`;
             img.className = 'mesa-img';
             // Ocultar la imagen si el archivo no existe
-            img.onerror = function() { this.style.display = 'none'; };
+            img.onerror = function() { 
+                this.style.display = 'none';
+                // También ocultar el título si no hay imagen
+                titulo.style.display = 'none';
+            };
             contenedorImg.appendChild(img);
 
+            // Save scroll position
+            scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // Show modal
             modal.style.display = 'block';
-            // Prevent body scroll on mobile
+            
+            // Prevent body scroll - iOS compatible method
             document.body.style.position = 'fixed';
+            document.body.style.top = `-${scrollPosition}px`;
             document.body.style.width = '100%';
-            document.body.style.top = `-${window.scrollY}px`;
+            document.body.style.overflow = 'hidden';
+            
+            // Prevent touch scrolling on body (iOS fix)
+            document.body.addEventListener('touchmove', preventBodyScroll, { passive: false });
+        }
+
+        function preventBodyScroll(e) {
+            // Allow scrolling inside modal content only
+            const modalContent = document.querySelector('.modal-content');
+            const target = e.target;
+            
+            // Check if the touch is inside the modal content
+            if (modalContent && (modalContent.contains(target) || modalContent === target)) {
+                // Allow scrolling within modal content
+                return;
+            }
+            
+            // Prevent all other scrolling (body, modal overlay)
+            e.preventDefault();
         }
 
         function cerrarModal() { 
             const modal = document.getElementById('miModal');
             modal.style.display = 'none';
             
+            // Remove touch event listener
+            document.body.removeEventListener('touchmove', preventBodyScroll);
+            
             // Restore body scroll
-            const scrollY = document.body.style.top;
             document.body.style.position = '';
-            document.body.style.width = '';
             document.body.style.top = '';
-            if (scrollY) {
-                window.scrollTo(0, parseInt(scrollY || '0') * -1);
-            }
+            document.body.style.width = '';
+            document.body.style.overflow = '';
+            
+            // Restore scroll position
+            window.scrollTo(0, scrollPosition);
         }
         
         // Close modal when clicking outside (on the dark overlay)
