@@ -331,6 +331,22 @@
                 return;
             }
 
+            // Ordenar: primero por mesa (numérico), luego alfabéticamente por nombre completo
+            filtrados.sort((a, b) => {
+                // Primero ordenar por número de mesa
+                const mesaA = parseInt(a.Mesa) || 0;
+                const mesaB = parseInt(b.Mesa) || 0;
+                
+                if (mesaA !== mesaB) {
+                    return mesaA - mesaB;
+                }
+                
+                // Si están en la misma mesa, ordenar alfabéticamente por nombre completo
+                const nombreA = normalizar((a.Nombre || "") + " " + (a.Apellido || ""));
+                const nombreB = normalizar((b.Nombre || "") + " " + (b.Apellido || ""));
+                return nombreA.localeCompare(nombreB);
+            });
+
             filtrados.forEach(i => {
                 const div = document.createElement('div');
                 div.className = 'card';
