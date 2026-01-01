@@ -365,16 +365,34 @@
             titulo.innerText = `Un recuerdo de cuando teníamos ${obtenerTextoEdad(numMesa)}`;
             contenedorImg.appendChild(titulo);
             
-            // Insertar imagen dinámica: mesa1.png, mesa2.png, etc.
+            // Insertar imagen dinámica: intenta PNG, luego JPEG/JPG
             const img = document.createElement('img');
-            img.src = `mesa${numMesa}.png`;
             img.className = 'mesa-img';
-            // Ocultar la imagen si el archivo no existe
-            img.onerror = function() { 
-                this.style.display = 'none';
-                // También ocultar el título si no hay imagen
-                titulo.style.display = 'none';
+            
+            // Lista de extensiones a intentar en orden
+            const extensiones = ['png', 'jpg', 'jpeg'];
+            let indiceExtension = 0;
+            
+            // Función para intentar cargar la siguiente extensión
+            const intentarCargarImagen = () => {
+                if (indiceExtension < extensiones.length) {
+                    img.src = `mesa${numMesa}.${extensiones[indiceExtension]}`;
+                } else {
+                    // Si todas las extensiones fallaron, ocultar imagen y título
+                    img.style.display = 'none';
+                    titulo.style.display = 'none';
+                }
             };
+            
+            // Si la imagen falla, intentar la siguiente extensión
+            img.onerror = function() {
+                indiceExtension++;
+                intentarCargarImagen();
+            };
+            
+            // Iniciar carga con la primera extensión
+            intentarCargarImagen();
+            
             contenedorImg.appendChild(img);
 
             // Save scroll position
