@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cami & Rafa - Lista de Invitados</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        body {
+            background-image: url('fondo.png'); 
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            font-family: 'Georgia', serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding-top: 50px;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.92);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        h1 { color: #2c3e50; font-size: 1.8em; margin-bottom: 5px; }
+        .date { color: #7f8c8d; margin-bottom: 25px; font-style: italic; }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            box-sizing: border-box;
+            border: 2px solid #a8dadc;
+            border-radius: 30px;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+        }
+        input:focus { border-color: #457b9d; box-shadow: 0 0 8px rgba(168, 218, 220, 0.5); }
+
+        #results { margin-top: 20px; }
+        .card {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            border: 1px solid #eee;
+            transition: 0.2s;
+            text-align: left;
+        }
+        .card:hover { border-color: #a8dadc; transform: translateY(-2px); }
+        .name { font-weight: bold; color: #34495e; }
+        .mesa-badge { background: #457b9d; color: white; padding: 5px 12px; border-radius: 15px; font-size: 0.9em; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10; }
+        .modal-content { 
+            background: white; 
+            margin: 15% auto; 
+            padding: 25px; 
+            width: 80%; 
+            max-width: 350px; 
+            border-radius: 15px; 
+            position: relative;
+            text-align: left;
+        }
+        .close { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #999; }
+        ul { list-style: none; padding: 0; margin-top: 15px; }
+        li { padding: 8px 0; border-bottom: 1px solid #eee; color: #555; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Cami & Rafa</h1>
+        <p class="date">10 / 01 / 26</p>
+        
+        <input type="text" id="buscador" placeholder="Busca tu nombre o apellido..." oninput="filtrar()">
+
+        <div id="results"></div>
+    </div>
+
+    <div id="miModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModal()">&times;</span>
+            <h2 id="modalTitle">Mesa</h2>
+            <p style="font-size: 0.9em; color: #888;">Compartirás mesa con:</p>
+            <ul id="listaMesa"></ul>
+        </div>
+    </div>
+
+    <script>
+        let todosLosInvitados = [];
+
+        // Función para quitar tildes y normalizar texto
+        const normalizar = (texto) => {
+            return texto.toString()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase()
+                .trim();
+        };
+
+        // Cargar datos del CSV
+        Papa.parse("invitados.csv", {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            // Si el Excel se guardó en formato antiguo, podrías necesitar encoding: "ISO-8859-1"
+            // Pero si lo guardaste como CSV UTF-8, no hace falta.
+            complete: function(results) {
+                // Limpiamos espacios en blanco de los encabezados por si acaso
+                todosLosInvitados = results.data.map(item => {
+                    let nuevoItem = {};
+                    for (let key in item) {
+                        nuevoItem[key.trim()] = item[key];
+                    }
+                    return nuevoItem;
+                });
+                console.log("Datos cargados correctamente");
+            }
+        });
+
+        function filtrar() {
+            const inputVal = document.getElementById('buscador').value;
+            const resDiv = document.getElementById('results');
+            resDiv.innerHTML = '';
+
+            const query = normalizar(inputVal);
+
+            if (query.length < 2) return;
+
+            const filtrados = todosLosInvitados.filter(i => {
+                const nom = normalizar(i.Nombre || "");
+                const ape = normalizar(i.Apellido || "");
+                return nom.includes(query) || ape.includes(query);
+            });
+
+            if (filtrados.length === 0) {
+                resDiv.innerHTML = '<p style="color: #888; font-size: 0.8em; margin-top:15px;">No se encontraron resultados</p>';
+                return;
+            }
+
+            filtrados.forEach(i => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.innerHTML = `
+                    <span class="name">${i.Nombre} ${i.Apellido}</span>
+                    <span class="mesa-badge">Mesa ${i.Mesa}</span>
+                `;
+                div.onclick = () => verMesa(i.Mesa);
+                resDiv.appendChild(div);
+            });
+        }
+
+        function verMesa(numMesa) {
+            const modal = document.getElementById('miModal');
+            const lista = document.getElementById('listaMesa');
+            document.getElementById('modalTitle').innerText = "Mesa " + numMesa;
+            
+            lista.innerHTML = '';
+            const compañeros = todosLosInvitados.filter(i => i.Mesa == numMesa);
+            
+            compañeros.forEach(c => {
+                const li = document.createElement('li');
+                li.innerText = `${c.Nombre} ${c.Apellido}`;
+                lista.appendChild(li);
+            });
+
+            modal.style.display = 'block';
+        }
+
+        function cerrarModal() { document.getElementById('miModal').style.display = 'none'; }
+        window.onclick = (event) => { if (event.target == document.getElementById('miModal')) cerrarModal(); }
+    </script>
+</body>
+</html>
