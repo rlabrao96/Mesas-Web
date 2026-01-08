@@ -2,178 +2,90 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cami & Rafa</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=GFS+Didot&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        * {
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow-x: hidden;
-        }
-        
+        /* Estilos Base optimizados */
         body {
             background-image: url('fondo.webp'); 
             background-color: #fdfaf6;
             background-size: cover;
             background-position: center center;
-            font-family: 'GFS Didot', 'Didot', 'Bodoni MT', 'Bodoni 72', 'Bodoni', serif;
+            font-family: 'GFS Didot', serif;
             margin: 0;
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            padding: 40px 15px;
+            padding: 20px 15px;
             min-height: 100vh;
             box-sizing: border-box;
-            position: relative;
-        }
-        
-        /* Desktop: fixed background */
-        @media (min-width: 768px) {
-            body {
-                background-attachment: fixed;
-            }
-        }
-        
-        /* Mobile: scroll background */
-        @media (max-width: 767px) {
-            body {
-                background-attachment: scroll;
-                padding: 20px 10px;
-            }
         }
 
+        /* --- CAMBIO CLAVE: Contenedor SEGURO por defecto --- */
         .container {
-            background-color: rgba(255, 255, 255, 0.75); 
-            backdrop-filter: blur(10px); 
-            -webkit-backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.98); /* Casi sólido para evitar crash */
             padding: 30px 20px;
             border-radius: 25px;
             box-shadow: 0 10px 32px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.4);
             width: 100%;
             max-width: 400px;
             text-align: center;
-            box-sizing: border-box;
             margin-top: 20px;
-            position: relative;
-            z-index: 1;
-        }
-        
-        /* Mobile container adjustments */
-        @media (max-width: 767px) {
-            .container {
-                padding: 25px 15px;
-                border-radius: 20px;
-                margin-top: 10px;
-                max-width: 100%;
-            }
+            transition: background 0.5s ease;
         }
 
-        h1 { color: #2c3e50; font-size: 1.8em; margin: 0 0 10px 0; }
-        .date { color: #5d6d7e; margin-bottom: 25px; font-style: italic; font-size: 1em; }
-        
-        /* Mobile typography */
-        @media (max-width: 767px) {
-            h1 { font-size: 1.5em; }
-            .date { font-size: 0.9em; margin-bottom: 20px; }
+        /* Solo celulares potentes tendrán el efecto Glassmorphism */
+        .power-device .container, .power-device .modal-content {
+            background-color: rgba(255, 255, 255, 0.75) !important;
+            backdrop-filter: blur(10px) !important;
+            -webkit-backdrop-filter: blur(10px) !important;
         }
 
+        h1 { color: #2c3e50; font-size: 1.6em; margin-bottom: 10px; letter-spacing: 1px; }
+        
         input {
             width: 100%;
             padding: 15px;
-            box-sizing: border-box;
-            border: 1px solid rgba(168, 218, 220, 0.6);
-            background: rgba(255, 255, 255, 0.9);
             border-radius: 30px;
-            font-size: 16px;
+            border: 1px solid #a8dadc;
+            font-size: 16px; /* Evita zoom molesto en iOS */
             outline: none;
             -webkit-appearance: none;
-            appearance: none;
-        }
-        
-        /* Mobile input - prevent zoom on iOS */
-        @media (max-width: 767px) {
-            input {
-                font-size: 16px; /* Prevents iOS zoom */
-                padding: 14px 15px;
-            }
         }
 
-        #results { 
-            margin-top: 25px; 
-            max-height: 60vh;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
+        /* Tarjetas de resultados */
         .card {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 16px;
+            background: white;
+            padding: 15px;
             margin: 12px 0;
             border-radius: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border: 1px solid rgba(255,255,255,0.8);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
             cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            user-select: none;
-        }
-        
-        /* Mobile card adjustments */
-        @media (max-width: 767px) {
-            .card {
-                padding: 14px;
-                margin: 10px 0;
-                min-height: 50px; /* Better touch target */
-            }
-            
-            #results {
-                max-height: 50vh;
-            }
         }
 
-        .name { font-weight: bold; color: #34495e; font-size: 1.1em; text-align: left; }
         .mesa-badge { 
-            background: rgb(0, 189, 232); 
+            background: #00bde8; 
             color: white; 
             padding: 6px 14px; 
             border-radius: 20px; 
-            font-size: 0.9em; 
-            font-weight: bold;
-            white-space: nowrap;
-        }
-        
-        @media (max-width: 767px) {
-            .name { font-size: 1em; }
-            .mesa-badge { font-size: 0.85em; padding: 5px 12px; }
+            font-weight: bold; 
         }
 
-        /* Modal */
+        /* Modal optimizado */
         .modal { 
             display: none; 
             position: fixed; 
             top: 0; left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0,0,0,0.5); 
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            z-index: 1000;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior: contain;
+            width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.6); 
+            z-index: 1000; 
         }
         
         .modal-content { 
@@ -182,89 +94,19 @@
             padding: 25px; 
             width: 85%;
             max-width: 350px; 
-            border-radius: 25px; 
-            position: relative;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            text-align: left;
-            max-height: 80vh;
+            border-radius: 25px;
+            max-height: 85vh;
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior: contain;
-            touch-action: pan-y;
-        }
-        
-        /* Mobile modal adjustments */
-        @media (max-width: 767px) {
-            .modal-content {
-                margin: 5% auto;
-                width: 90%;
-                max-width: none;
-                padding: 20px;
-                border-radius: 20px;
-                max-height: 85vh;
-            }
-        }
-        
-        .close { 
-            position: absolute; 
-            top: 15px; 
-            right: 20px; 
-            font-size: 28px; 
-            color: #bbb; 
-            cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            z-index: 1001;
-        }
-        
-        @media (max-width: 767px) {
-            .close {
-                top: 12px;
-                right: 15px;
-                font-size: 32px;
-                padding: 5px;
-            }
-        }
-        
-        ul { 
-            list-style: none; 
-            padding: 0; 
-            margin-top: 20px; 
-        }
-        
-        li { 
-            padding: 10px 0; 
-            border-bottom: 1px solid #f0f0f0; 
-            color: #444; 
+            position: relative;
         }
 
-        /* Estilo del título sobre la imagen */
-        .imagen-titulo {
-            font-family: 'GFS Didot', 'Didot', 'Bodoni MT', 'Bodoni 72', 'Bodoni', serif;
-            font-size: 1.1em;
-            color: #2c3e50;
-            text-align: center;
-            margin-top: 25px;
-            margin-bottom: 15px;
-            font-style: italic;
-            padding: 0 10px;
-        }
-        
-        @media (max-width: 767px) {
-            .imagen-titulo {
-                font-size: 1em;
-                margin-top: 20px;
-                margin-bottom: 12px;
-            }
-        }
-        
-        /* Estilo de la imagen de la mesa */
         .mesa-img {
             width: 100%;
             border-radius: 15px;
-            margin-top: 0;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-top: 15px;
             display: block;
+            /* Mejora: No procesar imagen hasta que sea necesario */
+            content-visibility: auto; 
         }
     </style>
 </head>
@@ -273,18 +115,15 @@
     <div class="container">
         <h1>CAMI & RAFA</h1>
         <p class="date">10 / 01 / 2026</p>
-        
-        <input type="text" id="buscador" placeholder="Busca tu nombre o apellido..." autocomplete="off">
-
+        <input type="text" id="buscador" placeholder="Busca tu nombre..." autocomplete="off">
         <div id="results"></div>
     </div>
 
     <div id="miModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="cerrarModal()">&times;</span>
-            <h2 id="modalTitle" style="margin-top:0; color:#2c3e50; border-bottom: 2px solid #a8dadc; padding-bottom: 10px;">Mesa</h2>
-            <p style="font-size: 0.9em; color: #7f8c8d; margin-top: 15px;">Compartirás con:</p>
-            <ul id="listaMesa"></ul>
+            <span class="close" onclick="cerrarModal()" style="float:right; cursor:pointer; font-size: 28px;">&times;</span>
+            <h2 id="modalTitle" style="color:#2c3e50; border-bottom: 1px solid #eee; padding-bottom: 10px;">Mesa</h2>
+            <ul id="listaMesa" style="list-style:none; padding:0;"></ul>
             <div id="contenedorImagen"></div>
         </div>
     </div>
@@ -293,231 +132,99 @@
         let todosLosInvitados = [];
         let textosMesas = [];
 
-        const normalizar = (texto) => {
-            return texto.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-        };
-        
-        const obtenerTextoEdad = (edad) => {
-            const edadNum = parseInt(edad);
-            return edadNum === 1 ? `${edadNum} año` : `${edadNum} años`;
+        // --- DETECCIÓN DE POTENCIA ---
+        const cores = navigator.hardwareConcurrency || 4;
+        if (cores >= 6) {
+            document.body.classList.add('power-device');
+        }
+
+        const normalizar = (t) => t.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+        // Carga de CSVs optimizada
+        const cargarDatos = (url, callback) => {
+            Papa.parse(url, {
+                download: true, header: true, skipEmptyLines: true,
+                complete: (r) => callback(r.data.map(i => {
+                    let n = {};
+                    for (let k in i) n[k.trim()] = i[k];
+                    return n;
+                }))
+            });
         };
 
-        Papa.parse("invitados.csv", {
-            download: true,
-            header: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-                todosLosInvitados = results.data.map(item => {
-                    let nuevoItem = {};
-                    for (let key in item) { nuevoItem[key.trim()] = item[key]; }
-                    return nuevoItem;
-                });
-            }
-        });
-        
-        // Cargar archivo TextoMesas.csv para mostrar los invitados en el formato correcto
-        Papa.parse("TextoMesas.csv", {
-            download: true,
-            header: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-                textosMesas = results.data.map(item => {
-                    let nuevoItem = {};
-                    for (let key in item) { nuevoItem[key.trim()] = item[key]; }
-                    return nuevoItem;
-                });
-            }
-        });
+        cargarDatos("invitados.csv", (d) => todosLosInvitados = d);
+        cargarDatos("TextoMesas.csv", (d) => textosMesas = d);
 
-        document.getElementById('buscador').addEventListener('input', function() {
+        document.getElementById('buscador').oninput = function() {
             const resDiv = document.getElementById('results');
             resDiv.innerHTML = '';
             const query = normalizar(this.value);
-
             if (query.length < 2) return;
 
             const filtrados = todosLosInvitados.filter(i => {
-                const full1 = normalizar((i.Nombre || "") + " " + (i.Apellido || ""));
-                const full2 = normalizar((i.Apellido || "") + " " + (i.Nombre || ""));
-                return full1.includes(query) || full2.includes(query);
+                const f1 = normalizar((i.Nombre || "") + " " + (i.Apellido || ""));
+                const f2 = normalizar((i.Apellido || "") + " " + (i.Nombre || ""));
+                return f1.includes(query) || f2.includes(query);
             });
 
-            if (filtrados.length === 0) {
-                resDiv.innerHTML = '<p style="color: #666; font-size: 0.9em; margin-top:20px;">No encontramos ese nombre...</p>';
-                return;
-            }
-
-            // Ordenar: primero por mesa (numérico), luego alfabéticamente por nombre completo
-            filtrados.sort((a, b) => {
-                // Primero ordenar por número de mesa
-                const mesaA = parseInt(a.Mesa) || 0;
-                const mesaB = parseInt(b.Mesa) || 0;
-                
-                if (mesaA !== mesaB) {
-                    return mesaA - mesaB;
-                }
-                
-                // Si están en la misma mesa, ordenar alfabéticamente por nombre completo
-                const nombreA = normalizar((a.Nombre || "") + " " + (a.Apellido || ""));
-                const nombreB = normalizar((b.Nombre || "") + " " + (b.Apellido || ""));
-                return nombreA.localeCompare(nombreB);
+            filtrados.sort((a,b) => (parseInt(a.Mesa)||0) - (parseInt(b.Mesa)||0)).forEach(i => {
+                const d = document.createElement('div');
+                d.className = 'card';
+                d.innerHTML = `<span>${i.Nombre} ${i.Apellido}</span><span class="mesa-badge">Mesa ${i.Mesa}</span>`;
+                d.onclick = () => verMesa(i.Mesa);
+                resDiv.appendChild(d);
             });
+        };
 
-            filtrados.forEach(i => {
-                const div = document.createElement('div');
-                div.className = 'card';
-                div.innerHTML = `<span class="name">${i.Nombre} ${i.Apellido}</span><span class="mesa-badge">Mesa ${i.Mesa}</span>`;
-                div.onclick = () => verMesa(i.Mesa);
-                resDiv.appendChild(div);
-            });
-        });
+        function verMesa(n) {
+            const esNovios = n === "Novios" || n === "0";
+            document.getElementById('modalTitle').innerText = esNovios ? "Mesa de Novios" : "Mesa " + n;
+            
+            const l = document.getElementById('listaMesa');
+            const c = document.getElementById('contenedorImagen');
+            l.innerHTML = ''; c.innerHTML = '';
 
-        let scrollPosition = 0;
-        
-        function verMesa(numMesa) {
-            const modal = document.getElementById('miModal');
-            const lista = document.getElementById('listaMesa');
-            const contenedorImg = document.getElementById('contenedorImagen');
-            
-            // Determinar si es mesa de novios (puede ser 0, "Novios" o "0")
-            const esMesaNovios = numMesa === "Novios" || numMesa === "novios" || parseInt(numMesa) === 0;
-            
-            // Mostrar título del modal
-            if (esMesaNovios) {
-                document.getElementById('modalTitle').innerText = "Mesa de Novios";
-            } else {
-                document.getElementById('modalTitle').innerText = "Mesa " + numMesa;
-            }
-            
-            lista.innerHTML = '';
-            contenedorImg.innerHTML = ''; // Limpiar imagen anterior
-
-            // Cargar lista de personas desde TextoMesas.csv en el formato correcto
-            const textos = textosMesas.filter(t => {
-                // Comparar tanto con string como con número para manejar ambos casos
-                return t.Mesa == numMesa || (esMesaNovios && (t.Mesa === "Novios" || t.Mesa === "novios"));
-            });
-            
-            textos.forEach(t => {
+            // Mostrar invitados de TextoMesas.csv
+            textosMesas.filter(t => t.Mesa == n).forEach(t => {
                 const li = document.createElement('li');
-                li.innerText = t.Texto; // Usar el texto tal como está en TextoMesas.csv
-                lista.appendChild(li);
+                li.style.padding = "8px 0";
+                li.style.borderBottom = "1px solid #f9f9f9";
+                li.innerText = t.Texto;
+                l.appendChild(li);
             });
 
-            // Insertar título sobre la imagen
-            const titulo = document.createElement('p');
-            titulo.className = 'imagen-titulo';
-            
-            // Para la mesa de novios, usar mensaje diferente
-            if (esMesaNovios) {
-                titulo.innerText = "Un recuerdo de nuestra foto más reciente";
-            } else {
-                // Para otras mesas, la edad es igual al número de mesa
-                titulo.innerText = `Un recuerdo de cuando teníamos ${obtenerTextoEdad(numMesa)}`;
-            }
-            
-            contenedorImg.appendChild(titulo);
-            
-            // Insertar imagen dinámica: intenta PNG, luego JPEG/JPG
+            // Lógica de imagen simplificada
             const img = document.createElement('img');
             img.className = 'mesa-img';
+            const base = esNovios ? 'mesaNovios' : `mesa${n}`;
+            img.src = `${base}.png`; // Intenta PNG primero
             
-            // Determinar el nombre base del archivo de imagen
-            let nombreBase;
-            if (esMesaNovios) {
-                nombreBase = 'mesaNovios';
-            } else {
-                nombreBase = `mesa${numMesa}`;
-            }
-            
-            // Lista de extensiones a intentar en orden
-            const extensiones = ['png', 'jpg', 'jpeg'];
-            let indiceExtension = 0;
-            
-            // Función para intentar cargar la siguiente extensión
-            const intentarCargarImagen = () => {
-                if (indiceExtension < extensiones.length) {
-                    img.src = `${nombreBase}.${extensiones[indiceExtension]}`;
+            // Si falla el PNG, intenta JPG una sola vez para ahorrar recursos
+            img.onerror = function() {
+                if (this.src.endsWith('.png')) {
+                    this.src = this.src.replace('.png', '.jpg');
                 } else {
-                    // Si todas las extensiones fallaron, ocultar imagen y título
-                    img.style.display = 'none';
-                    titulo.style.display = 'none';
+                    this.style.display = 'none';
                 }
             };
             
-            // Si la imagen falla, intentar la siguiente extensión
-            img.onerror = function() {
-                indiceExtension++;
-                intentarCargarImagen();
-            };
+            const tit = document.createElement('p');
+            tit.style.fontStyle = "italic"; tit.style.textAlign = "center";
+            tit.innerText = esNovios ? "Nuestra foto más reciente" : `Cuando teníamos ${n} años`;
             
-            // Iniciar carga con la primera extensión
-            intentarCargarImagen();
-            
-            contenedorImg.appendChild(img);
+            c.appendChild(tit);
+            c.appendChild(img);
 
-            // Save scroll position
-            scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
-            
-            // Show modal
-            modal.style.display = 'block';
-            
-            // Prevent body scroll - iOS compatible method
-            document.body.style.position = 'fixed';
-            document.body.style.top = `-${scrollPosition}px`;
-            document.body.style.width = '100%';
+            document.getElementById('miModal').style.display = 'block';
             document.body.style.overflow = 'hidden';
-            
-            // Prevent touch scrolling on body (iOS fix)
-            document.body.addEventListener('touchmove', preventBodyScroll, { passive: false });
         }
 
-        function preventBodyScroll(e) {
-            // Allow scrolling inside modal content only
-            const modalContent = document.querySelector('.modal-content');
-            const target = e.target;
-            
-            // Check if the touch is inside the modal content
-            if (modalContent && (modalContent.contains(target) || modalContent === target)) {
-                // Allow scrolling within modal content
-                return;
-            }
-            
-            // Prevent all other scrolling (body, modal overlay)
-            e.preventDefault();
+        function cerrarModal() {
+            document.getElementById('miModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
         }
 
-        function cerrarModal() { 
-            const modal = document.getElementById('miModal');
-            modal.style.display = 'none';
-            
-            // Remove touch event listener
-            document.body.removeEventListener('touchmove', preventBodyScroll);
-            
-            // Restore body scroll
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.width = '';
-            document.body.style.overflow = '';
-            
-            // Restore scroll position
-            window.scrollTo(0, scrollPosition);
-        }
-        
-        // Close modal when clicking outside (on the dark overlay)
-        document.getElementById('miModal').addEventListener('click', (event) => {
-            if (event.target.id === 'miModal') {
-                cerrarModal();
-            }
-        });
-        
-        // Prevent modal from closing when clicking inside modal content
-        const modalContent = document.querySelector('.modal-content');
-        if (modalContent) {
-            modalContent.addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
-        }
+        window.onclick = (e) => { if (e.target.id === 'miModal') cerrarModal(); }
     </script>
 </body>
 </html>
