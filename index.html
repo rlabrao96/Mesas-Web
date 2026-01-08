@@ -291,6 +291,7 @@
 
     <script>
         let todosLosInvitados = [];
+        let textosMesas = [];
 
         const normalizar = (texto) => {
             return texto.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -307,6 +308,20 @@
             skipEmptyLines: true,
             complete: function(results) {
                 todosLosInvitados = results.data.map(item => {
+                    let nuevoItem = {};
+                    for (let key in item) { nuevoItem[key.trim()] = item[key]; }
+                    return nuevoItem;
+                });
+            }
+        });
+        
+        // Cargar archivo TextoMesas.csv para mostrar los invitados en el formato correcto
+        Papa.parse("TextoMesas.csv", {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                textosMesas = results.data.map(item => {
                     let nuevoItem = {};
                     for (let key in item) { nuevoItem[key.trim()] = item[key]; }
                     return nuevoItem;
@@ -364,27 +379,56 @@
             const lista = document.getElementById('listaMesa');
             const contenedorImg = document.getElementById('contenedorImagen');
             
-            document.getElementById('modalTitle').innerText = "Mesa " + numMesa;
+            // Determinar si es mesa de novios (puede ser 0, "Novios" o "0")
+            const esMesaNovios = numMesa === "Novios" || numMesa === "novios" || parseInt(numMesa) === 0;
+            
+            // Mostrar título del modal
+            if (esMesaNovios) {
+                document.getElementById('modalTitle').innerText = "Mesa de Novios";
+            } else {
+                document.getElementById('modalTitle').innerText = "Mesa " + numMesa;
+            }
+            
             lista.innerHTML = '';
             contenedorImg.innerHTML = ''; // Limpiar imagen anterior
 
-            // Cargar lista de personas
-            const compañeros = todosLosInvitados.filter(i => i.Mesa == numMesa);
-            compañeros.forEach(c => {
+            // Cargar lista de personas desde TextoMesas.csv en el formato correcto
+            const textos = textosMesas.filter(t => {
+                // Comparar tanto con string como con número para manejar ambos casos
+                return t.Mesa == numMesa || (esMesaNovios && (t.Mesa === "Novios" || t.Mesa === "novios"));
+            });
+            
+            textos.forEach(t => {
                 const li = document.createElement('li');
-                li.innerText = `${c.Nombre} ${c.Apellido}`;
+                li.innerText = t.Texto; // Usar el texto tal como está en TextoMesas.csv
                 lista.appendChild(li);
             });
 
-            // Insertar título sobre la imagen (la edad es igual al número de mesa)
+            // Insertar título sobre la imagen
             const titulo = document.createElement('p');
             titulo.className = 'imagen-titulo';
-            titulo.innerText = `Un recuerdo de cuando teníamos ${obtenerTextoEdad(numMesa)}`;
+            
+            // Para la mesa de novios, usar mensaje diferente
+            if (esMesaNovios) {
+                titulo.innerText = "Un recuerdo de nuestra foto más reciente";
+            } else {
+                // Para otras mesas, la edad es igual al número de mesa
+                titulo.innerText = `Un recuerdo de cuando teníamos ${obtenerTextoEdad(numMesa)}`;
+            }
+            
             contenedorImg.appendChild(titulo);
             
             // Insertar imagen dinámica: intenta PNG, luego JPEG/JPG
             const img = document.createElement('img');
             img.className = 'mesa-img';
+            
+            // Determinar el nombre base del archivo de imagen
+            let nombreBase;
+            if (esMesaNovios) {
+                nombreBase = 'novios'; // Para mesa de novios, usar "novios" o "0"
+            } else {
+                nombreBase = `mesa${numMesa}`;
+            }
             
             // Lista de extensiones a intentar en orden
             const extensiones = ['png', 'jpg', 'jpeg'];
@@ -393,8 +437,15 @@
             // Función para intentar cargar la siguiente extensión
             const intentarCargarImagen = () => {
                 if (indiceExtension < extensiones.length) {
-                    img.src = `mesa${numMesa}.${extensiones[indiceExtension]}`;
+                    img.src = `${nombreBase}.${extensiones[indiceExtension]}`;
                 } else {
+                    // Si es mesa de novios y no encontró "novios", intentar con "mesa0"
+                    if (esMesaNovios && nombreBase === 'novios') {
+                        nombreBase = 'mesa0';
+                        indiceExtension = 0;
+                        intentarCargarImagen();
+                        return;
+                    }
                     // Si todas las extensiones fallaron, ocultar imagen y título
                     img.style.display = 'none';
                     titulo.style.display = 'none';
