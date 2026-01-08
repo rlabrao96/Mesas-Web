@@ -68,6 +68,13 @@
             z-index: 1;
         }
         
+        /* Desactivar backdrop-filter en dispositivos de bajo rendimiento */
+        .low-performance .container {
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+        
         /* Mobile container adjustments */
         @media (max-width: 767px) {
             .container {
@@ -174,6 +181,12 @@
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
+        }
+        
+        /* Desactivar backdrop-filter en dispositivos de bajo rendimiento */
+        .low-performance .modal {
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
         }
         
         .modal-content { 
@@ -290,6 +303,15 @@
     </div>
 
     <script>
+        // Detección de hardware: desactivar efectos costosos en dispositivos con menos de 6 núcleos
+        (function() {
+            const cores = navigator.hardwareConcurrency || 4; // Fallback a 4 si no está disponible
+            if (cores < 6) {
+                document.body.classList.add('low-performance');
+                console.log(`Dispositivo detectado con ${cores} núcleos. Efectos de backdrop-filter desactivados para mejor rendimiento.`);
+            }
+        })();
+        
         let todosLosInvitados = [];
         let textosMesas = [];
 
@@ -372,8 +394,6 @@
             });
         });
 
-        let scrollPosition = 0;
-        
         function verMesa(numMesa) {
             const modal = document.getElementById('miModal');
             const lista = document.getElementById('listaMesa');
@@ -418,7 +438,7 @@
             
             contenedorImg.appendChild(titulo);
             
-            // Insertar imagen dinámica: intenta PNG, luego JPEG/JPG
+            // Insertar imagen dinámica: optimizada para cargar solo 2 formatos
             const img = document.createElement('img');
             img.className = 'mesa-img';
             
@@ -430,78 +450,50 @@
                 nombreBase = `mesa${numMesa}`;
             }
             
-            // Lista de extensiones a intentar en orden
-            const extensiones = ['png', 'jpg', 'jpeg'];
-            let indiceExtension = 0;
+            // Orden de carga optimizado: primero Large.png (más pequeña), luego .png, luego .jpg
+            const opcionesImagen = [
+                `${nombreBase} Large.png`,  // Versión optimizada más pequeña
+                `${nombreBase}.png`,        // PNG original
+                `${nombreBase}.jpg`         // JPG como fallback
+            ];
             
-            // Función para intentar cargar la siguiente extensión
+            let indiceOpcion = 0;
+            
+            // Función para intentar cargar la siguiente opción
             const intentarCargarImagen = () => {
-                if (indiceExtension < extensiones.length) {
-                    img.src = `${nombreBase}.${extensiones[indiceExtension]}`;
+                if (indiceOpcion < opcionesImagen.length) {
+                    img.src = opcionesImagen[indiceOpcion];
                 } else {
-                    // Si todas las extensiones fallaron, ocultar imagen y título
+                    // Si todas las opciones fallaron, ocultar imagen y título
                     img.style.display = 'none';
                     titulo.style.display = 'none';
                 }
             };
             
-            // Si la imagen falla, intentar la siguiente extensión
+            // Si la imagen falla, intentar la siguiente opción
             img.onerror = function() {
-                indiceExtension++;
+                indiceOpcion++;
                 intentarCargarImagen();
             };
             
-            // Iniciar carga con la primera extensión
+            // Iniciar carga con la primera opción (Large.png)
             intentarCargarImagen();
             
             contenedorImg.appendChild(img);
 
-            // Save scroll position
-            scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
-            
-            // Show modal
+            // Mostrar modal
             modal.style.display = 'block';
             
-            // Prevent body scroll - iOS compatible method
-            document.body.style.position = 'fixed';
-            document.body.style.top = `-${scrollPosition}px`;
-            document.body.style.width = '100%';
+            // Bloquear scroll del body de forma simple (sin position: fixed para evitar saltos en iOS)
             document.body.style.overflow = 'hidden';
-            
-            // Prevent touch scrolling on body (iOS fix)
-            document.body.addEventListener('touchmove', preventBodyScroll, { passive: false });
-        }
-
-        function preventBodyScroll(e) {
-            // Allow scrolling inside modal content only
-            const modalContent = document.querySelector('.modal-content');
-            const target = e.target;
-            
-            // Check if the touch is inside the modal content
-            if (modalContent && (modalContent.contains(target) || modalContent === target)) {
-                // Allow scrolling within modal content
-                return;
-            }
-            
-            // Prevent all other scrolling (body, modal overlay)
-            e.preventDefault();
         }
 
         function cerrarModal() { 
             const modal = document.getElementById('miModal');
             modal.style.display = 'none';
             
-            // Remove touch event listener
-            document.body.removeEventListener('touchmove', preventBodyScroll);
-            
-            // Restore body scroll
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.width = '';
+            // Restaurar scroll del body
             document.body.style.overflow = '';
-            
-            // Restore scroll position
-            window.scrollTo(0, scrollPosition);
         }
         
         // Close modal when clicking outside (on the dark overlay)
