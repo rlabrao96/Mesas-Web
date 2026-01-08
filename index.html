@@ -265,6 +265,31 @@
             margin-top: 0;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             display: block;
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+            background: #f5f5f5;
+            min-height: 100px;
+        }
+        
+        /* Spinner de carga para imágenes */
+        .imagen-cargando {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 150px;
+            color: #999;
+            font-size: 0.9em;
+        }
+        
+        .imagen-cargando::after {
+            content: 'Cargando...';
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
         }
     </style>
 </head>
@@ -418,41 +443,156 @@
             
             contenedorImg.appendChild(titulo);
             
-            // Insertar imagen dinámica: intenta PNG, luego JPEG/JPG
+            // Mostrar spinner de carga
+            const spinner = document.createElement('div');
+            spinner.className = 'imagen-cargando';
+            contenedorImg.appendChild(spinner);
+            
+            // Insertar imagen dinámica con carga progresiva (baja calidad primero, luego alta calidad)
             const img = document.createElement('img');
             img.className = 'mesa-img';
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            img.style.transition = 'opacity 0.3s ease-in-out';
+            img.style.display = 'none'; // Ocultar hasta que cargue
             
             // Determinar el nombre base del archivo de imagen
             let nombreBase;
             if (esMesaNovios) {
-                nombreBase = 'mesaNovios'; // Para mesa de novios, usar "mesaNovios"
+                nombreBase = 'mesaNovios';
             } else {
                 nombreBase = `mesa${numMesa}`;
             }
             
-            // Lista de extensiones a intentar en orden
-            const extensiones = ['png', 'jpg', 'jpeg'];
-            let indiceExtension = 0;
+            // Detectar conexión y dispositivo
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            const esConexionLenta = connection && (
+                connection.effectiveType === 'slow-2g' || 
+                connection.effectiveType === '2g' ||
+                connection.saveData === true
+            );
             
-            // Función para intentar cargar la siguiente extensión
-            const intentarCargarImagen = () => {
+            // Lista de extensiones a intentar en orden (preferir JPG por ser más ligero)
+            const extensiones = ['jpg', 'jpeg', 'png'];
+            let indiceExtension = 0;
+            let imagenCargada = false;
+            let cargandoHD = false;
+            
+            // Función para intentar cargar thumbnail primero
+            const cargarThumbnail = () => {
+                const extensionesThumb = ['jpg', 'jpeg', 'png'];
+                const sufijos = ['_thumb', '_small', '_low'];
+                let thumbIntentos = 0;
+                let thumbMaxIntentos = sufijos.length * extensionesThumb.length;
+                let thumbEncontrado = false;
+                
+                // Intentar cargar thumbnail de forma asíncrona
+                for (let sufijo of sufijos) {
+                    for (let ext of extensionesThumb) {
+                        const imgThumb = new Image();
+                        imgThumb.onload = () => {
+                            if (!imagenCargada && !thumbEncontrado) {
+                                thumbEncontrado = true;
+                                img.src = imgThumb.src;
+                                imagenCargada = true;
+                                spinner.style.display = 'none';
+                                img.style.display = 'block';
+                                // Después de mostrar thumbnail, cargar HD si no es conexión lenta
+                                if (!esConexionLenta && !cargandoHD) {
+                                    setTimeout(() => cargarImagenHD(), 500);
+                                }
+                            }
+                        };
+                        imgThumb.onerror = () => {
+                            thumbIntentos++;
+                            // Si todos los thumbnails fallaron, cargar normal inmediatamente
+                            if (thumbIntentos >= thumbMaxIntentos && !imagenCargada) {
+                                cargarImagenNormal();
+                            }
+                        };
+                        imgThumb.src = `${nombreBase}${sufijo}.${ext}`;
+                    }
+                }
+                
+                // Timeout de seguridad: si no hay thumbnail en 200ms, cargar normal
+                setTimeout(() => {
+                    if (!imagenCargada) {
+                        cargarImagenNormal();
+                    }
+                }, 200);
+            };
+            
+            // Función para cargar imagen normal
+            const cargarImagenNormal = () => {
                 if (indiceExtension < extensiones.length) {
+                    img.onload = () => {
+                        if (!imagenCargada) {
+                            imagenCargada = true;
+                            spinner.style.display = 'none';
+                            img.style.display = 'block';
+                        }
+                    };
                     img.src = `${nombreBase}.${extensiones[indiceExtension]}`;
                 } else {
                     // Si todas las extensiones fallaron, ocultar imagen y título
-                    img.style.display = 'none';
-                    titulo.style.display = 'none';
+                    if (!imagenCargada) {
+                        spinner.style.display = 'none';
+                        img.style.display = 'none';
+                        titulo.style.display = 'none';
+                    }
                 }
+            };
+            
+            // Función para cargar imagen HD en segundo plano
+            const cargarImagenHD = () => {
+                if (cargandoHD || esConexionLenta) return;
+                cargandoHD = true;
+                
+                const imgHD = new Image();
+                let indiceHD = 0;
+                
+                const intentarHD = () => {
+                    if (indiceHD < extensiones.length) {
+                        imgHD.src = `${nombreBase}.${extensiones[indiceHD]}`;
+                    }
+                };
+                
+                imgHD.onload = () => {
+                    // Transición suave a alta calidad
+                    img.style.opacity = '0.8';
+                    setTimeout(() => {
+                        img.src = imgHD.src;
+                        img.style.opacity = '1';
+                    }, 150);
+                };
+                
+                imgHD.onerror = () => {
+                    indiceHD++;
+                    if (indiceHD < extensiones.length) {
+                        intentarHD();
+                    }
+                };
+                
+                intentarHD();
             };
             
             // Si la imagen falla, intentar la siguiente extensión
             img.onerror = function() {
-                indiceExtension++;
-                intentarCargarImagen();
+                if (!imagenCargada) {
+                    indiceExtension++;
+                    if (indiceExtension < extensiones.length) {
+                        cargarImagenNormal();
+                    } else {
+                        // Si todas las extensiones fallaron
+                        spinner.style.display = 'none';
+                        img.style.display = 'none';
+                        titulo.style.display = 'none';
+                    }
+                }
             };
             
-            // Iniciar carga con la primera extensión
-            intentarCargarImagen();
+            // Estrategia: intentar thumbnail primero, luego normal, luego HD si es posible
+            cargarThumbnail();
             
             contenedorImg.appendChild(img);
 
