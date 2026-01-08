@@ -94,8 +94,14 @@
             .date { font-size: 0.9em; margin-bottom: 20px; }
         }
 
+        .buscador-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
         input {
-            width: 100%;
+            flex: 1;
             padding: 15px;
             box-sizing: border-box;
             border: 1px solid rgba(168, 218, 220, 0.6);
@@ -107,11 +113,44 @@
             appearance: none;
         }
         
+        .btn-buscar {
+            display: none; /* Oculto por defecto, se muestra solo en dispositivos lentos */
+            padding: 15px 25px;
+            background: rgb(0, 189, 232);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'GFS Didot', 'Didot', 'Bodoni MT', 'Bodoni 72', 'Bodoni', serif;
+            transition: background 0.3s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        .btn-buscar:hover {
+            background: rgb(0, 160, 200);
+        }
+        
+        .btn-buscar:active {
+            background: rgb(0, 140, 180);
+        }
+        
+        .low-performance .btn-buscar {
+            display: block;
+        }
+        
         /* Mobile input - prevent zoom on iOS */
         @media (max-width: 767px) {
             input {
                 font-size: 16px; /* Prevents iOS zoom */
                 padding: 14px 15px;
+            }
+            
+            .btn-buscar {
+                padding: 14px 20px;
+                font-size: 15px;
             }
         }
 
@@ -287,7 +326,10 @@
         <h1>CAMI & RAFA</h1>
         <p class="date">10 / 01 / 2026</p>
         
-        <input type="text" id="buscador" placeholder="Busca tu nombre o apellido..." autocomplete="off">
+        <div class="buscador-container">
+            <input type="text" id="buscador" placeholder="Busca tu nombre o apellido..." autocomplete="off">
+            <button class="btn-buscar" id="btnBuscar">Buscar</button>
+        </div>
 
         <div id="results"></div>
     </div>
@@ -304,16 +346,19 @@
 
     <script>
         // Detección de hardware: desactivar efectos costosos en dispositivos con menos de 6 núcleos
+        let esDispositivoLento = false;
         (function() {
             const cores = navigator.hardwareConcurrency || 4; // Fallback a 4 si no está disponible
             if (cores < 6) {
+                esDispositivoLento = true;
                 document.body.classList.add('low-performance');
-                console.log(`Dispositivo detectado con ${cores} núcleos. Efectos de backdrop-filter desactivados para mejor rendimiento.`);
+                console.log(`Dispositivo detectado con ${cores} núcleos. Modo de bajo rendimiento activado.`);
             }
         })();
         
         let todosLosInvitados = [];
         let textosMesas = [];
+        let debounceTimer = null;
 
         const normalizar = (texto) => {
             return texto.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -351,13 +396,18 @@
             }
         });
 
-        document.getElementById('buscador').addEventListener('input', function() {
+        // Función de búsqueda optimizada (solo se ejecuta una vez por búsqueda)
+        function ejecutarBusqueda() {
             const resDiv = document.getElementById('results');
+            const buscador = document.getElementById('buscador');
+            const query = normalizar(buscador.value);
+
+            // Limpiar resultados
             resDiv.innerHTML = '';
-            const query = normalizar(this.value);
 
             if (query.length < 2) return;
 
+            // Filtrar invitados
             const filtrados = todosLosInvitados.filter(i => {
                 const full1 = normalizar((i.Nombre || "") + " " + (i.Apellido || ""));
                 const full2 = normalizar((i.Apellido || "") + " " + (i.Nombre || ""));
@@ -385,6 +435,7 @@
                 return nombreA.localeCompare(nombreB);
             });
 
+            // Renderizar resultados (solo una vez)
             filtrados.forEach(i => {
                 const div = document.createElement('div');
                 div.className = 'card';
@@ -392,7 +443,35 @@
                 div.onclick = () => verMesa(i.Mesa);
                 resDiv.appendChild(div);
             });
-        });
+        }
+
+        // Configuración según el tipo de dispositivo
+        const buscador = document.getElementById('buscador');
+        const btnBuscar = document.getElementById('btnBuscar');
+
+        if (esDispositivoLento) {
+            // Dispositivos lentos: búsqueda solo con botón o Enter
+            btnBuscar.addEventListener('click', ejecutarBusqueda);
+            
+            buscador.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    ejecutarBusqueda();
+                }
+            });
+        } else {
+            // Dispositivos modernos: búsqueda con debounce de 300ms
+            buscador.addEventListener('input', function() {
+                // Limpiar timer anterior
+                if (debounceTimer) {
+                    clearTimeout(debounceTimer);
+                }
+                
+                // Crear nuevo timer
+                debounceTimer = setTimeout(() => {
+                    ejecutarBusqueda();
+                }, 300);
+            });
+        }
 
         function verMesa(numMesa) {
             const modal = document.getElementById('miModal');
