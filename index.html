@@ -425,7 +425,7 @@
             // Determinar el nombre base del archivo de imagen
             let nombreBase;
             if (esMesaNovios) {
-                nombreBase = 'novios'; // Para mesa de novios, usar "novios" o "0"
+                nombreBase = 'mesaNovios'; // Para mesa de novios, usar "mesaNovios"
             } else {
                 nombreBase = `mesa${numMesa}`;
             }
@@ -439,13 +439,6 @@
                 if (indiceExtension < extensiones.length) {
                     img.src = `${nombreBase}.${extensiones[indiceExtension]}`;
                 } else {
-                    // Si es mesa de novios y no encontró "novios", intentar con "mesa0"
-                    if (esMesaNovios && nombreBase === 'novios') {
-                        nombreBase = 'mesa0';
-                        indiceExtension = 0;
-                        intentarCargarImagen();
-                        return;
-                    }
                     // Si todas las extensiones fallaron, ocultar imagen y título
                     img.style.display = 'none';
                     titulo.style.display = 'none';
